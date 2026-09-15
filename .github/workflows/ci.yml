@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  IMAGE_NAME: doorbell
+
+jobs:
+  build:
+    name: Build & Publish
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+
+    - name: Git Semantic Version
+      id: version
+      uses: PaulHatch/semantic-version@v6.0.3
+      with:
+        search_commit_body: true
+        bump_each_commit: true
+
+    - name: Set up JDK 25
+      uses: actions/setup-java@v6
+      with:
+        java-version: '25'
+        distribution: 'zulu'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v6
+
+    - name: Build
+      run: ./gradlew classes
+
+    - name: Test
+      run: ./gradlew check
+
+    - name: Log in to Registry
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+    - name: Lowercase repo owner name
+      run: |
+        echo "REPO_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >>${GITHUB_ENV}
+
+    - name: Build and push container image
+      run: ./gradlew jib --image=ghcr.io/${{ env.REPO_OWNER }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
