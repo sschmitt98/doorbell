@@ -1,0 +1,21 @@
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ignore Gradle build output directory
+build
+
+# IntelliJ IDEA
+.idea
+*.iml
+
+# macOS
+.DS_Store
+
+# tooling
+tooling/wikiusers.html
+tooling/wikiSpeedyUsers.csv
+
+# IDE setup
+/mise.toml
+
+.kotlin/
