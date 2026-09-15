@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.versions)
     alias(libs.plugins.ksp)
     alias(libs.plugins.telegram.bot)
+    alias(libs.plugins.jib)
 
     application
 }
@@ -58,4 +59,16 @@ java {
 
 application {
     mainClass = "foo.schmitt.doorbell.AppKt"
+}
+
+jib {
+    container {
+        ports = listOf("8080")
+    }
+}
+
+// exclude jib from Gradle configuration cache
+// see: https://github.com/GoogleContainerTools/jib/issues/3132
+tasks.filter { it.name in setOf("jibDockerBuild", "jibBuildTar", "jib") }.onEach {
+    it.notCompatibleWithConfigurationCache("Jib is not compatible with configuration cache")
 }
