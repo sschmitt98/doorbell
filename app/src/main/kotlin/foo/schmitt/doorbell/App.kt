@@ -14,6 +14,7 @@ import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.basic
+import io.ktor.server.engine.connector
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.metrics.micrometer.MicrometerMetrics
 import io.ktor.server.netty.Netty
@@ -162,7 +163,13 @@ class App(
 
         log.debug("example WebSocket Notification: {}", Json.encodeToString<Notification>(RingNotification(42, 1)))
 
-        embeddedServer(Netty, port = config.port) {
+        embeddedServer(Netty, configure = {
+            connector {
+                port = config.port
+            }
+            enableHttp2 = true
+            enableH2c = true
+        }) {
             moduleConfiguration()
         }.start(wait = true)
     }
