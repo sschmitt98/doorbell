@@ -6,12 +6,11 @@ import arrow.core.right
 import foo.schmitt.doorbell.ErrorPrincipal
 import foo.schmitt.doorbell.Principal
 import foo.schmitt.doorbell.domain.RingListener
+import foo.schmitt.doorbell.ws.model.Command
 import foo.schmitt.doorbell.ws.model.Notification
 import foo.schmitt.doorbell.ws.model.RingNotification
 import foo.schmitt.doorbell.ws.model.toDomain
-import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.principal
-import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingContext
 import io.ktor.server.websocket.DefaultWebSocketServerSession
@@ -124,16 +123,18 @@ class WebsocketController(
         }
     }
 
-    // TODO return Either<Error, Unit>
-    suspend fun RoutingContext.sendTextOrHandleError(text: String) {
+    suspend fun send(command: Command): Either<String, Unit> =
+        sendTextOrHandleError(Json.encodeToString(command))
+
+    suspend fun sendTextOrHandleError(text: String): Either<String, Unit> {
         log.debug("ws is {}", ws)
-        ws?.let {
+        return ws?.let {
             it.send(Frame.Text(text))
             log.debug("sent \"$text\"")
-            call.respond(HttpStatusCode.OK)
+            Unit.right()
         } ?: run {
             log.error("No connection for device.")
-            call.respond(HttpStatusCode.ServiceUnavailable, "No connection for device.")
+            "No connection to device".left()
         }
     }
 

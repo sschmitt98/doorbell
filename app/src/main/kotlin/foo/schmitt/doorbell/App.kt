@@ -5,7 +5,9 @@ import foo.schmitt.doorbell.listener.TelegramRingListener
 import foo.schmitt.doorbell.ws.WebsocketController
 import foo.schmitt.doorbell.ws.WebsocketPrincipal
 import foo.schmitt.doorbell.ws.model.Notification
+import foo.schmitt.doorbell.ws.model.RebootCommand
 import foo.schmitt.doorbell.ws.model.RingNotification
+import foo.schmitt.doorbell.ws.model.nextCommandSequence
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
@@ -139,11 +141,10 @@ class App(
         routing {
             route("/api/v1") {
                 authenticate("api-basic") {
-                    get("/hello") {
-                        call.respond("Hello, world!")
-                    }
                     post("/reboot") {
-                        // TODO implement
+                        websocketController.send(RebootCommand(nextCommandSequence()))
+                            .onLeft { err -> call.respond(HttpStatusCode.ServiceUnavailable, err) }
+                            .onRight { call.respond(HttpStatusCode.OK) }
                     }
                 }
             }

@@ -6,6 +6,7 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isNotEmpty
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
+import foo.schmitt.doorbell.common.apiAuth
 import foo.schmitt.doorbell.common.c
 import foo.schmitt.doorbell.common.metricsAuth
 import foo.schmitt.doorbell.common.websocketAuth
@@ -15,9 +16,12 @@ import foo.schmitt.doorbell.domain.RingNotification
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.basicAuth
 import io.ktor.client.request.get
+import io.ktor.client.request.post
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.websocket.Frame
+import io.ktor.websocket.readBytes
+import io.ktor.websocket.readText
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
@@ -149,5 +153,51 @@ class AppTest {
             counter.incrementAndGet()
             handledEvents.send(notification.toString())
         }
+    }
+
+    @Test
+    fun `when reboot then sends reboot command to websocket`() = withTestApp {
+        // when & then
+        c().webSocket("/ws", {
+            websocketAuth()
+        }) {
+            val res = c().post("/api/v1/reboot") {
+                apiAuth()
+            }
+
+            assertThat(res.status).isEqualTo(HttpStatusCode.OK)
+
+            val frame = incoming.receive()
+            frame as? Frame.Text ?: throw IllegalStateException("frame is not a text")
+            val text = frame.readText()
+
+            assertThat(text).isEqualTo(
+                """{"type":"foo.schmitt.doorbell.ws.model.RebootCommand","sequence":1}"""
+            )
+        }
+    }
+
+    @Test
+    fun `given invalid auth when reboot then returns http unauthorized`() = withTestApp {
+        // when
+        val res = c().post("/api/v1/reboot") {
+            basicAuth("no.one", "password123")
+        }
+
+        // then
+        assertThat(res.status).isEqualTo(HttpStatusCode.Unauthorized)
+        assertThat(res.bodyAsText()).isEmpty()
+    }
+
+    @Test
+    fun `given no auth when reboot then returns http unauthorized`() = withTestApp {
+        // when
+        val res = c().post("/api/v1/reboot") {
+            // no auth
+        }
+
+        // then
+        assertThat(res.status).isEqualTo(HttpStatusCode.Unauthorized)
+        assertThat(res.bodyAsText()).isEmpty()
     }
 }
