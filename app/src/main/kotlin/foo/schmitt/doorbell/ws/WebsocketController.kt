@@ -110,7 +110,7 @@ class WebsocketController(
                     is RingNotification -> {
                         // run in independent coroutine
                         coroutineScope {
-                            metrics.counter.increment()
+                            metrics.incrementRingCounter(notification.bellNr)
                             ringListener.onRing(notification.toDomain())
                         }
                     }
@@ -149,6 +149,5 @@ class WebsocketController(
                 0.0
             }
         }
-        // TODO add counter for bell rings (with bellNr tag)
     }
 }

@@ -130,7 +130,7 @@ class AppTest {
 
                 testRingListener.handledEvents.receive() // wait for event handling
                 assertThat(testRingListener.counter.get()).isEqualTo(1)
-                assertThat(getRingCounter()).isEqualTo(1)
+                assertThat(getRingCounter(1)).isEqualTo(1)
 
                 outgoing.send(
                     Frame.Text(
@@ -140,7 +140,18 @@ class AppTest {
 
                 testRingListener.handledEvents.receive() // wait for event handling
                 assertThat(testRingListener.counter.get()).isEqualTo(2)
-                assertThat(getRingCounter()).isEqualTo(2)
+                assertThat(getRingCounter(1)).isEqualTo(2)
+
+                outgoing.send(
+                    Frame.Text(
+                        """{"type":"foo.schmitt.doorbell.ws.model.RingNotification","sequence":44,"bellNr":42}"""
+                    )
+                )
+
+                testRingListener.handledEvents.receive() // wait for event handling
+                assertThat(testRingListener.counter.get()).isEqualTo(3)
+                assertThat(getRingCounter(1)).isEqualTo(2)
+                assertThat(getRingCounter(42)).isEqualTo(1)
 
                 assertThat(testRingListener.handledEvents.tryReceive().getOrNull()).isNull()
             }
@@ -157,14 +168,14 @@ class AppTest {
         }
     }
 
-    suspend fun ApplicationTestBuilder.getRingCounter(): Int? {
+    suspend fun ApplicationTestBuilder.getRingCounter(bellNr: Int): Int? {
         val response = c().get("/metrics") {
             metricsAuth()
         }
         assertThat(response.status).isEqualTo(HttpStatusCode.OK)
         return response.bodyAsText()
             .split("\n")
-            .find { it.startsWith("doorbell_rings_total") }
+            .find { it.startsWith("""doorbell_rings_total{bellNr="$bellNr"}""") }
             ?.split(" ")
             ?.last()
             ?.toDouble()
