@@ -19,8 +19,8 @@ import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.websocket.Frame
-import io.ktor.websocket.readBytes
 import io.ktor.websocket.readText
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
@@ -130,6 +130,7 @@ class AppTest {
 
                 testRingListener.handledEvents.receive() // wait for event handling
                 assertThat(testRingListener.counter.get()).isEqualTo(1)
+                assertThat(getRingCounter()).isEqualTo(1)
 
                 outgoing.send(
                     Frame.Text(
@@ -139,6 +140,7 @@ class AppTest {
 
                 testRingListener.handledEvents.receive() // wait for event handling
                 assertThat(testRingListener.counter.get()).isEqualTo(2)
+                assertThat(getRingCounter()).isEqualTo(2)
 
                 assertThat(testRingListener.handledEvents.tryReceive().getOrNull()).isNull()
             }
@@ -153,6 +155,20 @@ class AppTest {
             counter.incrementAndGet()
             handledEvents.send(notification.toString())
         }
+    }
+
+    suspend fun ApplicationTestBuilder.getRingCounter(): Int? {
+        val response = c().get("/metrics") {
+            metricsAuth()
+        }
+        assertThat(response.status).isEqualTo(HttpStatusCode.OK)
+        return response.bodyAsText()
+            .split("\n")
+            .find { it.startsWith("doorbell_rings_total") }
+            ?.split(" ")
+            ?.last()
+            ?.toDouble()
+            ?.toInt()
     }
 
     @Test

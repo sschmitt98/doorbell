@@ -53,9 +53,11 @@ class App(
 
     private val meterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
+    private val metrics = Metrics(meterRegistry)
+
 //    private val ringListener: RingListener = LoggingRingListener()
 
-    private val websocketController = WebsocketController(meterRegistry, ringListener)
+    private val websocketController = WebsocketController(meterRegistry, metrics, ringListener)
 
     val moduleConfiguration: Application.() -> Unit = {
         install(XForwardedHeaders)

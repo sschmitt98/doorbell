@@ -4,6 +4,7 @@ import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
 import foo.schmitt.doorbell.ErrorPrincipal
+import foo.schmitt.doorbell.Metrics
 import foo.schmitt.doorbell.Principal
 import foo.schmitt.doorbell.domain.RingListener
 import foo.schmitt.doorbell.ws.model.Command
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory.getLogger
 
 class WebsocketController(
     val meterRegistry: PrometheusMeterRegistry,
+    val metrics: Metrics,
     val ringListener: RingListener
 ) {
     private val log: Logger = getLogger(this::class.java)
@@ -108,6 +110,7 @@ class WebsocketController(
                     is RingNotification -> {
                         // run in independent coroutine
                         coroutineScope {
+                            metrics.counter.increment()
                             ringListener.onRing(notification.toDomain())
                         }
                     }
