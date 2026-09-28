@@ -13,5 +13,6 @@ podman run --rm \
   --env 'TELEGRAM_ENABLED=true' \
   --env 'TELEGRAM_BOT_TOKEN=<TOKEN>' \
   --env 'TELEGRAM_CHAT_ID=<CHAT_ID>' \
+  -p 8080:8080 \
   doorbell
 ```

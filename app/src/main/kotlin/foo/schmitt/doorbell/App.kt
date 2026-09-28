@@ -74,7 +74,7 @@ class App(
                 realm = "doorbell api"
                 validate { credentials ->
                     if (credentials.name == "api" && credentials.password == config.apiPassword) {
-                        ApiPrincipal()
+                        ApiPrincipal
                     } else {
                         null
                     }
@@ -85,9 +85,10 @@ class App(
                 realm = "doorbell websocket"
                 validate { credentials ->
                     if (credentials.name == "websocket" && credentials.password == config.websocketPassword) {
-                        WebsocketPrincipal()
+                        WebsocketPrincipal
                     } else {
-                        null
+                        // let websocket controller handle error explicitly by closing connection
+                        ErrorPrincipal("Invalid credentials")
                     }
                 }
             }
@@ -98,7 +99,7 @@ class App(
                     if (credentials.name == "metrics"
                         && credentials.password == config.metricsPassword
                     ) {
-                        MetricsPrincipal()
+                        MetricsPrincipal
                     } else {
                         null
                     }
@@ -145,6 +146,9 @@ class App(
                         // TODO implement
                     }
                 }
+            }
+            get("/health") {
+                call.respond(HttpStatusCode.OK)
             }
             authenticate("websocket-basic") {
                 websocketController.routes(this)

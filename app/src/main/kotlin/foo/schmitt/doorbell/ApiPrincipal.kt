@@ -1,3 +1,3 @@
 package foo.schmitt.doorbell
 
-class ApiPrincipal
+object ApiPrincipal : Principal

@@ -1,3 +1,5 @@
 package foo.schmitt.doorbell.ws
 
-class WebsocketPrincipal
+import foo.schmitt.doorbell.Principal
+
+object WebsocketPrincipal : Principal

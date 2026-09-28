@@ -1,3 +1,3 @@
 package foo.schmitt.doorbell
 
-class MetricsPrincipal
+object MetricsPrincipal : Principal
