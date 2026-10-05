@@ -14,3 +14,5 @@ sealed interface Command {
 private val seq = AtomicInteger()
 
 fun nextCommandSequence(): Int = seq.incrementAndGet()
+
+fun resetCommandSequence() = seq.set(0)

@@ -1,7 +1,9 @@
 package foo.schmitt.doorbell
 
-import foo.schmitt.doorbell.domain.RingListener
+import foo.schmitt.doorbell.listener.LoggingRingListener
+import foo.schmitt.doorbell.listener.MultiListener
 import foo.schmitt.doorbell.listener.TelegramRingListener
+import foo.schmitt.doorbell.listener.WebsocketBroadcastingRingListener
 import foo.schmitt.doorbell.ws.WebsocketController
 import foo.schmitt.doorbell.ws.WebsocketPrincipal
 import foo.schmitt.doorbell.ws.model.Notification
@@ -45,19 +47,12 @@ import kotlin.time.Duration.Companion.seconds
 
 class App(
     private val config: Config,
-    private val ringListener: RingListener = TelegramRingListener(config.telegram)
+    private val websocketController: WebsocketController,
+    private val meterRegistry: PrometheusMeterRegistry
 ) {
     private val log: Logger = getLogger(this::class.java)
 
     private fun ApplicationRequest.toLogStringWithColors(): String = "${httpMethod.value} - ${path()}"
-
-    private val meterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-
-    private val metrics = Metrics(meterRegistry)
-
-//    private val ringListener: RingListener = LoggingRingListener()
-
-    private val websocketController = WebsocketController(meterRegistry, metrics, ringListener)
 
     val moduleConfiguration: Application.() -> Unit = {
         install(XForwardedHeaders)
@@ -144,7 +139,7 @@ class App(
             route("/api/v1") {
                 authenticate("api-basic") {
                     post("/reboot") {
-                        websocketController.send(RebootCommand(nextCommandSequence()))
+                        websocketController.sendToAll(RebootCommand(nextCommandSequence()))
                             .onLeft { err -> call.respond(HttpStatusCode.ServiceUnavailable, err) }
                             .onRight { call.respond(HttpStatusCode.OK) }
                     }
@@ -182,6 +177,32 @@ class App(
     }
 }
 
+fun registerListeners(
+    multiListener: MultiListener,
+    config: Config,
+    websocketController: WebsocketController,
+) {
+    multiListener.registerListener(LoggingRingListener())
+
+    if (config.telegram.telegramEnabled) {
+        multiListener.registerListener(TelegramRingListener(config.telegram))
+    }
+
+    if (config.broadcast.broadcastEnabled) {
+        multiListener.registerListener(WebsocketBroadcastingRingListener(websocketController))
+    }
+}
+
 fun main() {
-    App(Config.fromEnv()).start()
+    val config = Config.fromEnv()
+    val meterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+    val metrics = Metrics(meterRegistry)
+    val multiListener = MultiListener()
+    val websocketController = WebsocketController(meterRegistry, metrics, multiListener)
+    registerListeners(multiListener, config, websocketController)
+
+    App(config,
+        websocketController,
+        meterRegistry
+    ).start()
 }

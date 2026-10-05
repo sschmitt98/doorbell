@@ -5,7 +5,8 @@ data class Config(
     val apiPassword: String,
     val websocketPassword: String,
     val metricsPassword: String,
-    val telegram: TelegramConfig
+    val telegram: TelegramConfig,
+    val broadcast: BroadcastConfig
 ) {
     companion object {
         fun fromEnv(): Config = Config(
@@ -17,6 +18,9 @@ data class Config(
                 telegramEnabled = readEnvBoolean("TELEGRAM_ENABLED", false),
                 telegramBotToken = readEnvString("TELEGRAM_BOT_TOKEN", "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"),
                 telegramChatId = readEnvString("TELEGRAM_CHAT_ID", "-1234561234")
+            ),
+            broadcast = BroadcastConfig(
+                broadcastEnabled = readEnvBoolean("BROADCAST_ENABLED", true)
             )
         )
 
@@ -38,4 +42,8 @@ data class TelegramConfig(
     val telegramEnabled: Boolean,
     val telegramBotToken: String,
     val telegramChatId: String
+)
+
+data class BroadcastConfig(
+    val broadcastEnabled: Boolean
 )

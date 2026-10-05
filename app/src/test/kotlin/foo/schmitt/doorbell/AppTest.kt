@@ -183,6 +183,39 @@ class AppTest {
     }
 
     @Test
+    fun `given broadcast enabled when sending RingNotification then sends BellCommand`() = withTestApp(
+        broadcastEnabled = true
+    ) {
+        // given
+
+        // when & then
+        c().webSocket("/ws", {
+            websocketAuth()
+        }) {
+            val outerConnection = this
+            val outerOutgoing = outgoing
+
+            c().webSocket("/ws", {
+                websocketAuth()
+            }) {
+                outerConnection.outgoing.send(
+                    Frame.Text(
+                        """{"type":"foo.schmitt.doorbell.ws.model.RingNotification","sequence":42,"bellNr":1}"""
+                    )
+                )
+
+                val frame = incoming.receive()
+                frame as? Frame.Text ?: throw IllegalStateException("frame is not a text")
+                val text = frame.readText()
+
+                assertThat(text).isEqualTo(
+                    """{"type":"foo.schmitt.doorbell.ws.model.BellCommand","sequence":1,"soundNr":1}"""
+                )
+            }
+        }
+    }
+
+    @Test
     fun `when reboot then sends reboot command to websocket`() = withTestApp {
         // when & then
         c().webSocket("/ws", {
