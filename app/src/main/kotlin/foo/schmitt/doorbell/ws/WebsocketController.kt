@@ -61,7 +61,7 @@ class WebsocketController(
 
     private suspend fun DefaultWebSocketServerSession.handleConnection() {
         sessions.add(this)
-        log.debug("set ws to {}", this)
+        log.debug("added {} to sessions", this)
 
         try {
             for (frame in incoming) {
@@ -123,6 +123,7 @@ class WebsocketController(
         sessions.forEach { session ->
             try {
                 session.send(Frame.Text(text))
+                log.debug("sent {} to device session {}", text, session)
             } catch (exception: Exception) {
                 log.error("error while sending notification to $session", exception)
             }
