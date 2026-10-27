@@ -48,7 +48,7 @@ private fun testSetup(ringListener: RingListener, broadcastEnabled: Boolean): Ap
         multiListener.registerListener(WebsocketBroadcastingRingListener(websocketController))
     }
 
-    return App(config, websocketController, meterRegistry)
+    return App(config, websocketController, meterRegistry, multiListener)
 }
 
 internal fun withTestApp(

@@ -193,7 +193,6 @@ class AppTest {
             websocketAuth()
         }) {
             val outerConnection = this
-            val outerOutgoing = outgoing
 
             c().webSocket("/ws", {
                 websocketAuth()
