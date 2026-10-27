@@ -1,5 +1,6 @@
 package foo.schmitt.doorbell
 
+import foo.schmitt.doorbell.domain.RingListener
 import foo.schmitt.doorbell.listener.LoggingRingListener
 import foo.schmitt.doorbell.listener.MultiListener
 import foo.schmitt.doorbell.listener.TelegramRingListener
@@ -48,7 +49,8 @@ import kotlin.time.Duration.Companion.seconds
 class App(
     private val config: Config,
     private val websocketController: WebsocketController,
-    private val meterRegistry: PrometheusMeterRegistry
+    private val meterRegistry: PrometheusMeterRegistry,
+    private val ringListener: RingListener
 ) {
     private val log: Logger = getLogger(this::class.java)
 
@@ -143,6 +145,13 @@ class App(
                             .onLeft { err -> call.respond(HttpStatusCode.ServiceUnavailable, err) }
                             .onRight { call.respond(HttpStatusCode.OK) }
                     }
+
+                    // TODO integration test
+                    post("/ring") {
+                        ringListener.onRing(
+                            foo.schmitt.doorbell.domain.RingNotification(nextCommandSequence(), 1)
+                        )
+                    }
                 }
             }
             get("/health") {
@@ -203,6 +212,7 @@ fun main() {
 
     App(config,
         websocketController,
-        meterRegistry
+        meterRegistry,
+        multiListener
     ).start()
 }
